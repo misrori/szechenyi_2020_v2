@@ -2,9 +2,12 @@ library(shiny)
 library(plotly)
 library(DT)
 library(data.table)
+library(rgdal)
+library(leaflet)
+source('load_map.R')
 adat <- fread('szechenyi2020_adatok.csv', stringsAsFactors = F)
 navbarPage(
-           title="Széchenyi 2020",
+           title="Széchenyi 2020",fluid = TRUE,
            tabPanel("Leírás",
                     #h1("Széchenyi 2020 nyertes pályázatok", align = "center"),
                     h2("Magyarország ", round(sum(adat$osszeg)/1000, 2), "milliárd forintot fizetett ki", align="center"),
@@ -62,6 +65,28 @@ navbarPage(
                     )
                     
            ),
+           tabPanel("Térkép", fluidPage(
+
+                    div(h3(textOutput('ezenvagyok'), align = "center")),
+                    div(h4(textOutput('enyiazanyi'), align = "center")),
+                    leafletOutput("mymap"),
+                    absolutePanel(top = 200, right = 0,
+                                  radioButtons("map_valaszto", "Vállasz",
+                                               c("Régió" = "REGIO",
+                                                 "Megye" = "MEGYE",
+                                                 "Kistérség" = "KISTERSEG",
+                                                 "Helység" = "varos"), selected = "REGIO")
+                                  )
+                    
+                 
+                    ),
+                    div(h4(textOutput('eztklikkelted'), align = "center")),
+                    fluidRow(
+                      column(6, plotlyOutput('bal_felso_plot', height = 220)),
+                      column(6, plotlyOutput('jobb_felso_plot', height = 220))
+                    )
+           
+          ),
            tags$head(
              tags$link(rel = "stylesheet", type = "text/css", href = "bootstrap.css")
            )# http://bootswatch.com/#Grafikon_tab

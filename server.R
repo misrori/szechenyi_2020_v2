@@ -2,6 +2,9 @@ library(shiny)
 library(DT)
 library(plotly)
 library(data.table)
+library(rgdal)
+library(leaflet)
+source('load_map.R')
 
 function(input, output, session) {
   adat <- fread('szechenyi2020_adatok.csv', stringsAsFactors = F)
@@ -18,18 +21,28 @@ function(input, output, session) {
   adat$roma_onkormanyzat <- as.factor(adat$roma_onkormanyzat)
   adat$Lako_nepesseg <- as.numeric(adat$Lako_nepesseg)
   
+  regio_map <- readOGR("geo_map/regio.geojson", "OGRGeoJSON")
+  megye_map <-  readOGR("geo_map/megye.geojson", "OGRGeoJSON")
+  kisterseg_map <- readOGR("geo_map/kist.geojson", "OGRGeoJSON")
+  helyseg_map <-  readOGR("geo_map/helyseg.geojson", "OGRGeoJSON")
+  helyseg_map$osszeg<- as.numeric(helyseg_map$osszeg)
+  geo_adatok <- fread('geo_map/geo_adatok.csv')
+  geo_adatok$ev <- as.factor(year(geo_adatok$datum))
+  
+  
   osszes_nyertes <- reactive({
    adatom <- adat
+   setorder(adatom, -datum )
     names(adatom) <- c('Forrás', 'Operatív program', 'Program', 'Város', 'Nyertes', 'Leírás',
                      'Megítélés dátuma', 'Megítélt összeg (millió Ft)','Megítélés éve' ,'Település jogállása','Megye', 'Kistérség', 'Népesség',
                      'Roma önkormányzat', 'Hátrányos helyzet besorolás' )
+    
     return(adatom)
   })
   
   output$summary <- renderPrint({
    my_text
   })
-  
   
   output$table <- DT::renderDataTable(
     DT::datatable(osszes_nyertes(),extensions = c('Buttons','FixedHeader'),class = 'cell-border stripe',rownames = FALSE,
@@ -61,13 +74,13 @@ function(input, output, session) {
       return(osszes_nyertes())
     }
     else if(by1!=''& by2=='' & by3==''){
-      return(osszeitendo_adat[, list('Összeg (millió Ft)'= round(sum(osszeg),2),'Nyertes pályázatok száma'=.N), by=by1])
+      return(osszeitendo_adat[, list('Megítélt összeg (millió Ft)'= round(sum(osszeg),2),'Nyertes pályázatok száma'=.N), by=by1])
     }
     else if(by1!=''& by2!='' & by3==''){
-      return(adat[,list('Összeg (millió Ft)'= round(sum(osszeg),2),'Nyertes pályázatok száma'=.N), by=c(by1, by2)])
+      return(adat[,list('Megítélt összeg (millió Ft)'= round(sum(osszeg),2),'Nyertes pályázatok száma'=.N), by=c(by1, by2)])
     }
     else if(by1!=''& by2!='' & by3!=''){
-      return(adat[,list('Összeg (millió Ft)'= round(sum(osszeg),2),'Nyertes pályázatok száma'=.N), by=c(by1, by2, by3)])
+      return(adat[,list('Megítélt összeg (millió Ft)'= round(sum(osszeg),2),'Nyertes pályázatok száma'=.N), by=c(by1, by2, by3)])
     }
   })
   
@@ -77,7 +90,7 @@ function(input, output, session) {
                                                  buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
                                                  columnDefs = list(list(className = 'dt-right',
                                                                         targets = 0:2)))) %>%
-      formatCurrency(c(2:8), '')
+      formatCurrency(which(colnames(final_data())=="Megítélt összeg (millió Ft)"), '')
   )  
   
  
@@ -124,4 +137,197 @@ function(input, output, session) {
       write.csv(osszes_nyertes(), file,  row.names = FALSE,  fileEncoding = "UTF-8")
     }
   )
+  ###############################################################################################
+  #######                                  Map                                            #######
+  ###############################################################################################
+
+  my_reactive_map <- reactive({
+    if(input$map_valaszto=='REGIO'){
+      return(get_regio(regio_map = regio_map))
+    }
+    if(input$map_valaszto=='MEGYE'){
+      return(get_megye(megye_map = megye_map))
+    }    
+    if(input$map_valaszto=='KISTERSEG'){
+      return(get_kisterseg(kisterseg_map = kisterseg_map))
+    }
+    if(input$map_valaszto=='varos'){
+      return(get_helyseg(helyseg_map=helyseg_map))
+    }
+    
+  })
+  
+  output$mymap <- renderLeaflet({
+    my_reactive_map()
+  })
+  
+  ###############################################################################################
+  #######                                  Mouse                                            #######
+
+  my_mouse_on <- reactive({
+    
+    if(input$map_valaszto=='REGIO'){
+      return(paste( input$mymap_shape_mouseover$id, "Régió", sep = " "))
+    }
+    if(input$map_valaszto=='MEGYE'){
+      return(paste( input$mymap_shape_mouseover$id, "Megye", sep = " "))
+    }
+    
+    if(input$map_valaszto=='KISTERSEG'){
+      return(paste( input$mymap_shape_mouseover$id, "Kistérség", sep = " "))
+    }
+   
+    if(input$map_valaszto=='varos'){
+      return( input$mymap_shape_mouseover$id)
+    }
+  })
+  
+  output$ezenvagyok <- renderText(my_mouse_on())
+  
+  ###############################################################################################
+  #######                                  Mouse   cliked                                         #######
+  
+  my_mouse_cliked <- reactive({
+    
+    if(input$map_valaszto=='REGIO'){
+      return(paste( input$mymap_shape_click$id, "Régió", sep = " "))
+    }
+    if(input$map_valaszto=='MEGYE'){
+      return(paste( input$mymap_shape_click$id, "Megye", sep = " "))
+    }
+    if(input$map_valaszto=='KISTERSEG'){
+      return(paste( input$mymap_shape_click$id, "Kistérség", sep = " "))
+    }
+    if(input$map_valaszto=='varos'){
+      return(input$mymap_shape_click$id)
+    }
+    
+  })
+  
+  output$eztklikkelted <- renderText(my_mouse_cliked())
+  
+  
+  ###############################################################################################
+  #######                                  Money                                            #######
+
+  
+  my_money_on <- reactive({
+    #kezdeti
+    if(is.null(input$mymap_shape_mouseover$id)==T){
+      return(" ")
+    }
+    else{ 
+      #váltás
+    if(input$map_valaszto=='REGIO'){
+     temp_res <- geo_adatok[REGIO==input$mymap_shape_mouseover$id, list('osszeg'= round(sum(osszeg, na.rm = T)/1000,0),'number'=.N), by=REGIO]
+     if (is.na(temp_res$osszeg[1])==T){
+       return("0 nyertes pályázat ")
+     }
+     else{
+     return(paste(temp_res$osszeg[1], " milliárd   ", temp_res$number[1] , " nyertes pályázat", sep = " "))
+     }
+    }
+    if(input$map_valaszto=='MEGYE'){
+      temp_res <- geo_adatok[MEGYE==input$mymap_shape_mouseover$id, list('osszeg'= round(sum(osszeg,na.rm = T)/1000,0),'number'=.N), by=REGIO]
+      if (is.na(temp_res$osszeg[1])==T){
+        return("0 nyertes pályázat  ")
+      }
+      else{
+      return(paste(temp_res$osszeg[1], " milliárd   ", temp_res$number[1] , " nyertes pályázat", sep = " "))
+      }
+    }
+      
+      if(input$map_valaszto=='KISTERSEG'){
+        temp_res <- geo_adatok[KISTERSEG==input$mymap_shape_mouseover$id, list('osszeg'= round(sum(osszeg,na.rm = T)/1000,0),'number'=.N), by=KISTERSEG]
+        if (is.na(temp_res$osszeg[1])==T){
+          return("0 nyertes pályázat  ")
+        }
+        else{
+          return(paste(temp_res$osszeg[1], " milliárd   ", temp_res$number[1] , " nyertes pályázat", sep = " "))
+        }
+      }
+      
+      
+      if(input$map_valaszto=='varos'){
+        temp_res <- geo_adatok[varos==input$mymap_shape_mouseover$id, list('osszeg'= round(sum(osszeg,na.rm = T),0),'number'=.N), by=varos]
+        if (is.na(temp_res$osszeg[1])==T){
+          return("0 nyertes pályázat  ")
+        }
+        else{
+          return(paste(temp_res$osszeg[1], " millió   ", temp_res$number[1] , " nyertes pályázat", sep = " "))
+        }
+      }
+    }#else
+  })
+  
+  output$enyiazanyi <- renderText(my_money_on())
+  ###############################################################################################
+  #######                                  Plotok                                            #######
+  
+  cliked <- reactive({
+    input$mymap_shape_click$id
+
+  })
+ 
+  ######################
+  ###   bal felso  #######
+  
+  bal_felso_reactive_plot <- reactive({
+    x <- list(
+      title ='Operatív program'
+      
+    )
+    y <- list(
+      title = "Milliárd Ft"
+    )
+    
+    if(input$map_valaszto=='REGIO'){
+      adatom <- geo_adatok[REGIO ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('REGIO','operativ_program' )]
+      p <- plot_ly(adatom, x =~operativ_program, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = x  )
+      return(p)
+    }
+    if(input$map_valaszto=='MEGYE'){
+      adatom <- geo_adatok[MEGYE ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('MEGYE','operativ_program' )]
+      p <- plot_ly(adatom, x =~operativ_program, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = x  )
+      return(p)
+    }
+
+  })
+  
+  output$bal_felso_plot <- renderPlotly({
+    bal_felso_reactive_plot()
+  })
+
+  ######################
+  ###   jobb felso  #######
+  jobb_felso_reactive_plot <- reactive({
+    x <- list(
+      title ='Év'
+      
+    )
+    y <- list(
+      title = "Milliárd Ft"
+    )
+    if(input$map_valaszto=='REGIO'){
+      adatom <- geo_adatok[REGIO ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('REGIO','ev' )]
+      p <- plot_ly(adatom, x =~ev, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = x  )
+      return(p)
+    }
+    if(input$map_valaszto=='MEGYE'){
+      adatom <- geo_adatok[MEGYE ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('MEGYE','ev' )]
+      p <- plot_ly(adatom, x =~ev, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = x  )
+      return(p)
+    }
+    
+  })
+  output$jobb_felso_plot <- renderPlotly({
+    jobb_felso_reactive_plot()
+  })
+  
+  
+  
 }
