@@ -4,6 +4,7 @@ library(plotly)
 library(data.table)
 library(rgdal)
 library(leaflet)
+library(RColorBrewer)
 source('load_map.R')
 
 function(input, output, session) {

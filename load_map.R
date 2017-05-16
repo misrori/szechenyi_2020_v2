@@ -1,6 +1,6 @@
 
 get_regio <-function(regio_map){
-pal <- colorNumeric('Reds',regio_map$osszeg)
+pal <- colorNumeric('YlOrRd',regio_map$osszeg)
 
 regio_plot <- 
 leaflet(regio_map) %>%
@@ -17,7 +17,7 @@ return(regio_plot)
 
 get_megye <-function(megye_map){
 
-  pal <- colorNumeric('Reds',megye_map$osszeg)
+  pal <- colorNumeric('YlOrRd',megye_map$osszeg)
 
   megye_plot <- 
     leaflet(megye_map) %>%
@@ -34,7 +34,7 @@ get_megye <-function(megye_map){
 
 get_kisterseg <-function(kisterseg_map){
  
-  pal <- colorNumeric('Reds',kisterseg_map$osszeg)
+  pal <- colorNumeric('YlOrRd',kisterseg_map$osszeg)
   
   kisterseg_plot <- 
     leaflet(kisterseg_map) %>%
@@ -51,7 +51,7 @@ get_kisterseg <-function(kisterseg_map){
 
 
 get_helyseg <-function(helyseg_map){
-  pal <- colorNumeric('Reds',helyseg_map$osszeg)
+  pal <- colorNumeric('YlOrRd',helyseg_map$osszeg)
   
   helyseg_plot <- 
     leaflet(helyseg_map) %>%
