@@ -210,7 +210,6 @@ function(input, output, session) {
   ###############################################################################################
   #######                                  Money                                            #######
 
-  
   my_money_on <- reactive({
     #kezdeti
     if(is.null(input$mymap_shape_mouseover$id)==T){
@@ -269,7 +268,7 @@ function(input, output, session) {
 
   })
  
-  ######################
+  ########################################################################################
   ###   bal felso  #######
   
   bal_felso_reactive_plot <- reactive({
@@ -279,6 +278,9 @@ function(input, output, session) {
     )
     y <- list(
       title = "Milliárd Ft"
+    )
+    y2 <- list(
+      title = "Millió Ft"
     )
     
     if(input$map_valaszto=='REGIO'){
@@ -293,6 +295,18 @@ function(input, output, session) {
         layout( yaxis = y, xaxis = x  )
       return(p)
     }
+    if(input$map_valaszto=='KISTERSEG'){
+      adatom <- geo_adatok[KISTERSEG ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('KISTERSEG','operativ_program' )]
+      p <- plot_ly(adatom, x =~operativ_program, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = x  )
+      return(p)
+    }
+    if(input$map_valaszto=='varos'){
+      adatom <- geo_adatok[varos ==cliked(),list('osszeg'=sum(osszeg, na.rm = T),'nyertes_palyazat'=.N), by=c('varos','operativ_program' )]
+      p <- plot_ly(adatom, x =~operativ_program, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y2, xaxis = x  )
+      return(p)
+    }
 
   })
   
@@ -300,7 +314,7 @@ function(input, output, session) {
     bal_felso_reactive_plot()
   })
 
-  ######################
+  ########################################################################################
   ###   jobb felso  #######
   jobb_felso_reactive_plot <- reactive({
     x <- list(
@@ -309,6 +323,9 @@ function(input, output, session) {
     )
     y <- list(
       title = "Milliárd Ft"
+    )
+    y2 <- list(
+      title = "Millió Ft"
     )
     if(input$map_valaszto=='REGIO'){
       adatom <- geo_adatok[REGIO ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('REGIO','ev' )]
@@ -322,12 +339,106 @@ function(input, output, session) {
         layout( yaxis = y, xaxis = x  )
       return(p)
     }
-    
+    if(input$map_valaszto=='KISTERSEG'){
+      adatom <- geo_adatok[KISTERSEG ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('KISTERSEG','ev' )]
+      p <- plot_ly(adatom, x =~ev, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = x  )
+      return(p)
+    }
+    if(input$map_valaszto=='varos'){
+      adatom <- geo_adatok[varos ==cliked(),list('osszeg'=sum(osszeg, na.rm = T),'nyertes_palyazat'=.N), by=c('varos','ev' )]
+      p <- plot_ly(adatom, x =~ev, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y2, xaxis = x  )
+      return(p)
+    }
   })
   output$jobb_felso_plot <- renderPlotly({
     jobb_felso_reactive_plot()
   })
   
   
+  ########################################################################################
+  ###   ball also  #######
+  ball_also_reactive_plot <- reactive({
+    y <- list(
+      title = "Milliárd Ft"
+    )
+    y2 <- list(
+      title = "Millió Ft"
+    )
+    if(input$map_valaszto=='REGIO'){
+      adatom <- geo_adatok[REGIO ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('REGIO','MEGYE' )]
+      p <- plot_ly(adatom, x =~MEGYE, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = list(title="Megye")  )
+      return(p)
+    }
+    if(input$map_valaszto=='MEGYE'){
+      adatom <- geo_adatok[MEGYE ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('MEGYE','KISTERSEG' )]
+      p <- plot_ly(adatom, x =~KISTERSEG, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = list(title='Kistérség')  )
+      return(p)
+    }
+    if(input$map_valaszto=='KISTERSEG'){
+      adatom <- data.table(geo_adatok[KISTERSEG ==cliked(),list('osszeg'=sum(osszeg, na.rm = T),'nyertes_palyazat'=.N), by=c('KISTERSEG','varos' )])
+      setorder(adatom, -osszeg)
+      p <- plot_ly(adatom, x =~varos, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y2, xaxis = list(title='Város',categoryarray=~osszeg,categoryorder = "array" )  )
+      return(p)
+    }
+    if(input$map_valaszto=='varos'){
+      adatom <- data.table(geo_adatok[varos ==cliked(),list('osszeg'=sum(osszeg, na.rm = T),'nyertes_palyazat'=.N), by=c('varos','nyertes' )])
+      setorder(adatom, -osszeg)
+      p <- plot_ly(adatom, x =~nyertes, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y2, xaxis = list(title='Nyertes',categoryarray=~osszeg, categoryorder = "array")  )
+      return(p)
+    }
+  })
+  output$ball_also_plot <- renderPlotly({
+    ball_also_reactive_plot()
+  })
+  
+  
+  ########################################################################################
+  ###   jobb also  #######
+  jobb_also_reactive_plot <- reactive({
+    y <- list(
+      title = "Milliárd Ft"
+    )
+    y2 <- list(
+      title = "Millió Ft"
+    )
+    if(input$map_valaszto=='REGIO'){
+      adatom <- geo_adatok[REGIO ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('REGIO','program' )]
+      setorder(adatom, -osszeg)
+      p <- plot_ly(adatom, x =~program, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = list(title="Program",categoryarray=~osszeg, categoryorder = "array")  )
+      return(p)
+    }
+    if(input$map_valaszto=='MEGYE'){
+      adatom <- geo_adatok[MEGYE ==cliked(),list('osszeg'=sum(osszeg, na.rm = T)/1000,'nyertes_palyazat'=.N), by=c('MEGYE','program' )]
+      setorder(adatom, -osszeg)
+      p <- plot_ly(adatom, x =~program, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y, xaxis = list(title='Program',categoryarray=~osszeg, categoryorder = "array")  )
+      return(p)
+    }
+    if(input$map_valaszto=='KISTERSEG'){
+      adatom <- data.table(geo_adatok[KISTERSEG ==cliked(),list('osszeg'=sum(osszeg, na.rm = T),'nyertes_palyazat'=.N), by=c('KISTERSEG','program' )])
+      setorder(adatom, -osszeg)
+      p <- plot_ly(adatom, x =~program, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y2, xaxis = list(title='Program',categoryarray=~osszeg,categoryorder = "array" )  )
+      return(p)
+    }
+    if(input$map_valaszto=='varos'){
+      adatom <- data.table(geo_adatok[varos ==cliked(),list('osszeg'=sum(osszeg, na.rm = T),'nyertes_palyazat'=.N), by=c('varos','program' )])
+      setorder(adatom, -osszeg)
+      p <- plot_ly(adatom, x =~program, y = ~osszeg, type = 'bar')%>%
+        layout( yaxis = y2, xaxis = list(title='Program',categoryarray=~osszeg, categoryorder = "array")  )
+      return(p)
+    }
+  })
+  output$jobb_also_plot <- renderPlotly({
+    jobb_also_reactive_plot()
+  })
   
 }
+

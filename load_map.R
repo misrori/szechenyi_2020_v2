@@ -1,6 +1,6 @@
 
 get_regio <-function(regio_map){
-pal <- colorNumeric(c("blue", "red"), 1:max(regio_map$osszeg, na.rm = T))
+pal <- colorNumeric('Reds',regio_map$osszeg)
 
 regio_plot <- 
 leaflet(regio_map) %>%
@@ -9,13 +9,15 @@ leaflet(regio_map) %>%
                labelOptions = labelOptions(noHide = T),
                fillColor = pal(regio_map$osszeg),layerId = ~LOCALNAME,
                highlightOptions = highlightOptions(color = "white", weight = 2,
-                                                   bringToFront = TRUE))
+                                                   bringToFront = TRUE))%>%
+addLegend(position = "bottomright",pal = pal, values = ~osszeg, title="Megitélt összeg<br>(Millió Ft)")
+                                                                                  
 return(regio_plot)
 }
 
 get_megye <-function(megye_map){
-  pal <- colorNumeric(c("blue", "red"), 1:max(megye_map$osszeg, na.rm = T))
-  
+
+  pal <- colorNumeric('Reds',megye_map$osszeg)
 
   megye_plot <- 
     leaflet(megye_map) %>%
@@ -24,13 +26,16 @@ get_megye <-function(megye_map){
                  labelOptions = labelOptions(noHide = T),
                  fillColor = pal(megye_map$osszeg),layerId = ~MEGY_NEV,
                  highlightOptions = highlightOptions(color = "white", weight = 2,
-                                                     bringToFront = TRUE))
+                                                     bringToFront = TRUE))%>%
+    addLegend(position = "bottomright",pal = pal, values = ~osszeg, title="Megitélt összeg<br>(Millió Ft)")
+  
   return(megye_plot)
 }
 
 get_kisterseg <-function(kisterseg_map){
-  pal <- colorNumeric(c("blue", "red"), 1:max(kisterseg_map$osszeg, na.rm = T))
-
+ 
+  pal <- colorNumeric('Reds',kisterseg_map$osszeg)
+  
   kisterseg_plot <- 
     leaflet(kisterseg_map) %>%
     addPolygons( weight = 1, smoothFactor = 0.5,
@@ -38,13 +43,15 @@ get_kisterseg <-function(kisterseg_map){
                  labelOptions = labelOptions(noHide = T),
                  fillColor = pal(kisterseg_map$osszeg),layerId = ~KIST_NEV,
                  highlightOptions = highlightOptions(color = "white", weight = 2,
-                                                     bringToFront = TRUE))
+                                                     bringToFront = TRUE))%>%
+    addLegend(position = "bottomright",pal = pal, values = ~osszeg, title="Megitélt összeg<br>(Millió Ft)")
+  
   return(kisterseg_plot)
 }
 
 
 get_helyseg <-function(helyseg_map){
-  pal <- colorNumeric(c("blue", "red"), 1:max(helyseg_map$osszeg, na.rm = T))
+  pal <- colorNumeric('Reds',helyseg_map$osszeg)
   
   helyseg_plot <- 
     leaflet(helyseg_map) %>%
@@ -53,7 +60,9 @@ get_helyseg <-function(helyseg_map){
                  labelOptions = labelOptions(noHide = T),
                  fillColor = pal(helyseg_map$osszeg),layerId = ~TEL_NEV,
                  highlightOptions = highlightOptions(color = "white", weight = 2,
-                                                     bringToFront = TRUE))
+                                                     bringToFront = TRUE))%>%
+    addLegend(position = "bottomright",pal = pal, values = ~osszeg, title="Megitélt összeg<br>(Millió Ft)")
+  
   return(helyseg_plot)
 }
 

@@ -82,8 +82,8 @@ navbarPage(
                     ),
                     div(h4(textOutput('eztklikkelted'), align = "center")),
                     fluidRow(
-                      column(6, plotlyOutput('bal_felso_plot', height = 220)),
-                      column(6, plotlyOutput('jobb_felso_plot', height = 220))
+                      column(6, plotlyOutput('bal_felso_plot', height = 220),plotlyOutput('ball_also_plot', height = 220)),
+                      column(6, plotlyOutput('jobb_felso_plot', height = 220),plotlyOutput('jobb_also_plot', height = 220))
                     )
            
           ),
